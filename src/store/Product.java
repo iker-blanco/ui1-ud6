@@ -1,3 +1,5 @@
+package store;
+
 import java.io.Serializable;
 
 public class Product implements Serializable {
@@ -61,7 +63,7 @@ public class Product implements Serializable {
     // Overriding toString method to print product details
     @Override
     public String toString() {
-        return "Product{" +
+        return "store.Product{" +
                 "id='" + id + '\'' +
                 ", name='" + name + '\'' +
                 ", price=" + price +

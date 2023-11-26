@@ -1,13 +1,12 @@
+package store;
+
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
+import utils.JsonUtil;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.io.FileWriter;
-import java.io.IOException;
 
 public class StoreImpl implements StoreInterface {
     private final String usersFilePath = "users.json";
@@ -30,7 +29,7 @@ public class StoreImpl implements StoreInterface {
 
     @Override
     public boolean doUserLogin(String username, String password) {
-        JSONArray users = readJsonArrayFromFile(usersFilePath);
+        JSONArray users = JsonUtil.readJsonArrayFromFile(usersFilePath);
         for (Object o : users) {
             JSONObject user = (JSONObject) o;
             String storedUsername = (String) user.get("username");
@@ -50,9 +49,9 @@ public class StoreImpl implements StoreInterface {
         newUser.put("email", email);
         newUser.put("phone", phone);
 
-        JSONArray users = readJsonArrayFromFile(usersFilePath);
+        JSONArray users = JsonUtil.readJsonArrayFromFile(usersFilePath);
         users.add(newUser);
-        writeJsonArrayToFile(users, usersFilePath);
+        JsonUtil.writeJsonArrayToFile(users, usersFilePath);
         return true;
     }
 
@@ -62,45 +61,24 @@ public class StoreImpl implements StoreInterface {
         newProduct.put("name", name);
         newProduct.put("price", price);
 
-        JSONArray products = readJsonArrayFromFile(productsFilePath);
+        JSONArray products = JsonUtil.readJsonArrayFromFile(productsFilePath);
         products.add(newProduct);
-        writeJsonArrayToFile(products, productsFilePath);
+        JsonUtil.writeJsonArrayToFile(products, productsFilePath);
         return true;
     }
 
     @Override
     public JSONArray showProductsInShop() {
-        return readJsonArrayFromFile(productsFilePath);
+        return JsonUtil.readJsonArrayFromFile(productsFilePath);
     }
 
     @Override
     public boolean deleteProductInShop(String productName) {
-        JSONArray products = readJsonArrayFromFile(productsFilePath);
+        JSONArray products = JsonUtil.readJsonArrayFromFile(productsFilePath);
         products.removeIf(product -> ((JSONObject) product).get("name").equals(productName));
-        writeJsonArrayToFile(products, productsFilePath);
+        JsonUtil.writeJsonArrayToFile(products, productsFilePath);
         return true;
     }
 
-    private JSONArray readJsonArrayFromFile(String filePath) {
-        JSONParser parser = new JSONParser();
-        try {
-            String content = new String(Files.readAllBytes(Paths.get(filePath)));
-            Object obj = parser.parse(content);
-            return (JSONArray) obj;
-        } catch (IOException | ParseException e) {
-            e.printStackTrace();
-            return new JSONArray();
-        }
-    }
 
-    private boolean writeJsonArrayToFile(JSONArray array, String filePath) {
-        try (FileWriter file = new FileWriter(filePath)) {
-            file.write(array.toJSONString());
-            file.flush();
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
 }
