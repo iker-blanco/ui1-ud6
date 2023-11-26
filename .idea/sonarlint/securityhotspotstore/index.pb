@@ -65,3 +65,7 @@ w
 G.idea/sonarlint/issuestore/a/9/a966b7faaa79f8726885bfcbd73658e6f7a49122,e/e/ee6406f73292fe3ffaddcfb178bc1710686ca3e0
 Å
 Q.idea/sonarlint/securityhotspotstore/b/c/bc39a969113511603cb8e73c10277c08e38d2ea1,f/8/f83f4a15778f85296c3854756bfa7950d110692d
+K
+src/utils/CustomLogger.java,6/a/6ab3d041c5398afe619b67986f0dfeeb8a0ce6bb
+Q
+!src/utils/CustomLogFormatter.java,6/a/6a1f07635a60d998e584ad844bf13604b3159393
