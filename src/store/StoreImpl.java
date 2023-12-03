@@ -1,3 +1,4 @@
+
 package store;
 
 import org.json.simple.JSONArray;
@@ -6,20 +7,28 @@ import utils.CustomLogger;
 import utils.JsonUtil;
 
 import java.io.IOException;
+import java.io.Serializable; // Importa la interfaz Serializable
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
  * Implementation of StoreInterface providing functionalities for a store.
  * This includes user authentication, product management, and data persistence using JSON files.
  */
-public class StoreImpl implements StoreInterface {
+public class StoreImpl implements StoreInterface, Serializable { // Implementa Serializable
+    private static final long serialVersionUID = 1L; // Añade un número de versión
+
     private static final Logger logger = CustomLogger.getLogger(StoreImpl.class);
 
     private static final String USERS_JSON = "users.json";
     private static final String PRODUCTS_JSON = "products.json";
+    
+    
 
     /**
      * Constructor for StoreImpl.
@@ -37,11 +46,11 @@ public class StoreImpl implements StoreInterface {
      */
     private void initializeFile(String filePath) {
         try {
-            logger.info("Initializing file: " + filePath);
+            logger.info("Iniciando archivo: " + filePath);
             Files.createFile(Paths.get(filePath));
             Files.write(Paths.get(filePath), "[]".getBytes(), StandardOpenOption.CREATE);
         } catch (IOException e) {
-            logger.info("File already exists: " + filePath);
+            logger.info("El archivo ya existe: " + filePath);
         }
     }
 
@@ -52,33 +61,43 @@ public class StoreImpl implements StoreInterface {
      * @param password the password to authenticate.
      * @return true if authentication is successful, false otherwise.
      */
-    @Override
     public boolean doUserLogin(String username, String password) {
-        logger.info("Logging in user: " + username);
         JSONArray users = JsonUtil.readJsonArrayFromFile(USERS_JSON);
-        for (Object o : users) {
-            JSONObject user = (JSONObject) o;
-            if (username.equals(user.get("username")) && password.equals(user.get("password"))) {
-                logger.info("User logged in: " + username);
+
+        for (Object userObj : users) {
+            JSONObject user = (JSONObject) userObj;
+            String storedUsername = (String) user.get("Usuario");
+            String storedPassword = (String) user.get("Contraseña");
+
+            if (username.equals(storedUsername) && password.equals(storedPassword)) {
+                logger.info("Usuario logueado: " + username);
                 return true;
             }
         }
-        logger.info("User login failed: " + username);
+
+        logger.info("Error iniciando sesion del usuario: " + username);
         return false;
     }
 
     /**
      * Registers a new user with the provided details.
      *
-     * @param username the username of the new user.
-     * @param password the password of the new user.
-     * @param email    the email of the new user.
-     * @param phone    the phone number of the new user.
+     * @param username      the username of the new user.
+     * @param password      the password of the new user.
+     * @param email         the email of the new user.
+     * @param confirmEmail  the confirmation of the email.
+     * @param phone         the phone number of the new user.
      * @return true if registration is successful.
      */
-    @Override
-    public boolean registerNewUser(String username, String password, String email, String phone) {
-        logger.info("Registering new user: " + username);
+    public boolean registerNewUser(String username, String password, String email, String checkEmail,String phone) {
+        // Validate user information
+        if (!isValidUsername(username) || !isValidPassword(password) || !isValidEmail(email, checkEmail) || !isValidPhone(phone)) {
+            System.out.println("Error: Información de usuario no válida.");
+            return false;
+        }
+
+        // Rest of the logic to register the new user
+        System.out.println("Registrando nuevo usuario: " + username);
         JSONObject newUser = new JSONObject();
         newUser.put("username", username);
         newUser.put("password", password);
@@ -88,10 +107,52 @@ public class StoreImpl implements StoreInterface {
         JSONArray users = JsonUtil.readJsonArrayFromFile(USERS_JSON);
         users.add(newUser);
         JsonUtil.writeJsonArrayToFile(users, USERS_JSON);
-        logger.info("User registered: " + username);
+        System.out.println("Usuario registrado: " + username);
+
         return true;
     }
 
+    // Validation helper methods
+
+    private boolean isValidUsername(String username) {
+        // Implement username validation logic
+        // For example, check if it is alphanumeric
+        return username.matches("^[a-zA-Z0-9]+$");
+    }
+
+    private boolean isValidPassword(String password) {
+        // Implement password validation logic
+        String passwordRegex = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@*&%]).{8,}$";
+        return password.matches(passwordRegex);
+
+    }
+
+    private boolean isValidEmail(String email, String confirmEmail) {
+        // Implement email validation logic using regex
+        String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
+
+        if (!email.matches(emailRegex)) {
+            System.out.println("Error: Formato de correo electrónico no válido.");
+            return false;
+        }
+
+        // Comparar emails de manera explícita
+        if (!email.equals(confirmEmail)) {
+            System.out.println("Error: Los correos electrónicos no coinciden.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean isValidPhone(String phone) {
+        // Implement phone validation logic
+       
+        return phone.matches("^\\d{9,}$");
+    }
+
+
+    
     /**
      * Inserts a new product into the shop.
      *
@@ -101,16 +162,36 @@ public class StoreImpl implements StoreInterface {
      */
     @Override
     public boolean insertProductInShop(String name, double price) {
-        logger.info("Inserting product: " + name + " with price: " + price);
-        JSONObject newProduct = new JSONObject();
-        newProduct.put("name", name);
-        newProduct.put("price", price);
+        // Generar un ID único para el nuevo producto
+        String id = UUID.randomUUID().toString();
 
+        logger.info("Producto añadido: " + name + " con precio: " + price + " y su ID: " + id);
+
+        // Crear un nuevo objeto Product
+        Product newProduct = new Product(id, name, price);
+
+        // Convertir el objeto Product a JSONObject
+        JSONObject productJson = new JSONObject();
+        productJson.put("id", newProduct.getId());
+        productJson.put("name", newProduct.getName());
+        productJson.put("price", newProduct.getPrice());
+
+        // Leer el archivo JSON existente
         JSONArray products = JsonUtil.readJsonArrayFromFile(PRODUCTS_JSON);
-        products.add(newProduct);
-        JsonUtil.writeJsonArrayToFile(products, PRODUCTS_JSON);
-        logger.info("Product inserted: " + name + " with price: " + price);
-        return true;
+
+        // Agregar el nuevo producto al array JSON
+        products.add(productJson);
+
+        // Escribir el array actualizado en el archivo
+        boolean writeResult = JsonUtil.writeJsonArrayToFile(products, PRODUCTS_JSON);
+
+        if (writeResult) {
+            logger.info("Producto añadido: " + name + " with price: " + price + " and ID: " + id);
+            return true;
+        } else {
+            logger.severe("Error al añadir producto: " + name);
+            return false;
+        }
     }
 
     /**
@@ -119,10 +200,28 @@ public class StoreImpl implements StoreInterface {
      * @return JSONArray containing all the products.
      */
     @Override
-    public JSONArray showProductsInShop() {
-        logger.info("Showing all products");
-        return JsonUtil.readJsonArrayFromFile(PRODUCTS_JSON);
+public List<Product> showProductsInShop() {
+    logger.info("Mostrando todos los productos");
+    
+    // Leer el array JSON de productos
+    JSONArray productsJson = JsonUtil.readJsonArrayFromFile(PRODUCTS_JSON);
+
+    // Crear una lista para almacenar los objetos Product
+    List<Product> products = new ArrayList<>();
+
+    // Convertir cada objeto JSON a un objeto Product
+    for (Object o : productsJson) {
+        JSONObject productJson = (JSONObject) o;
+        String id = (String) productJson.get("id");
+        String name = (String) productJson.get("name");
+        double price = (double) productJson.get("price");
+
+        Product product = new Product(id, name, price);
+        products.add(product);
     }
+
+    return products;
+}
 
     /**
      * Deletes a product from the shop.
@@ -132,11 +231,13 @@ public class StoreImpl implements StoreInterface {
      */
     @Override
     public boolean deleteProductInShop(String productName) {
-        logger.info("Deleting product: " + productName);
+        logger.info("Eliminando producto: " + productName);
         JSONArray products = JsonUtil.readJsonArrayFromFile(PRODUCTS_JSON);
         products.removeIf(product -> productName.equals(((JSONObject) product).get("name")));
         JsonUtil.writeJsonArrayToFile(products, PRODUCTS_JSON);
-        logger.info("Product deleted: " + productName);
+        logger.info("Producto eliminado: " + productName);
         return true;
     }
+
+	
 }
